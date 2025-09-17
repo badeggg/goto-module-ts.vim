@@ -1,1 +1,1 @@
-source ./_ts_common.vim
+runtime ftplugin/_ts_common.vim
