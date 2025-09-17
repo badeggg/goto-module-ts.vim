@@ -105,7 +105,7 @@ function! s:ResolvePath(module)
     return ''
 endfunction
 
-function! <buffer> GotoModule()
+function! GotoModuleTs()
     let l:found_module = ''
 
     " todo, not respecting import and 'xxx' are separated in two lines
@@ -144,6 +144,3 @@ function! <buffer> GotoModule()
         echom "No import or from statement found from the current line onwards."
     endif
 endfunction
-
-
-nmap <leader>m :call GotoModule()<CR>
