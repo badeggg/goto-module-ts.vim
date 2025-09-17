@@ -105,7 +105,7 @@ function! s:ResolvePath(module)
     return ''
 endfunction
 
-function! GotoModule()
+function! <buffer> GotoModule()
     let l:found_module = ''
 
     " todo, not respecting import and 'xxx' are separated in two lines
