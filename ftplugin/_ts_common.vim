@@ -70,12 +70,11 @@ function! s:ResolvePath(module)
                         " todo, only checking the first item
                         let l:resolved_alias = substitute(l:alias_path[0], '\*$', '', '')
                         let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
-                        let l:final_path = s:ResolveFile(l:resolved_path)
-                        if !empty(l:final_path)
-                            if l:final_path =~ '^' . getcwd()
-                                return fnamemodify(l:final_path, ':.')
+                        if !empty(l:resolved_path)
+                            if l:resolved_path =~ '^' . getcwd()
+                                return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
                             else
-                                return l:final_path
+                                return s:ResolveFile(l:resolved_path)
                             endif
                         endif
                     endif
@@ -90,9 +89,8 @@ function! s:ResolvePath(module)
         let l:node_modules_dir = l:current_dir . '/node_modules'
         if isdirectory(l:node_modules_dir)
             let l:resolved_path = l:node_modules_dir . '/' . a:module
-            let l:final_path = s:ResolveFile(l:resolved_path)
-            if !empty(l:final_path)
-                return l:final_path
+            if !empty(l:resolved_path)
+                return s:ResolveFile(l:resolved_path)
             endif
         endif
         let l:parent_dir = fnamemodify(l:current_dir, ':h')
