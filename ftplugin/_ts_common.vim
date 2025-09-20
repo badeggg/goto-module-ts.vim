@@ -1,29 +1,44 @@
 " Helper function to resolve files
 function! s:ResolveFile(path)
+    let l:results = []
+
+    " Section 1: Check for specific file extensions
     if fnamemodify(a:path, ':e') =~? '^\(css\|ts\|tsx\|js\|jsx\)$'
         if filereadable(a:path)
-            return a:path
+            return [a:path]
         endif
     endif
 
+    " Section 2: Check for a file with a set of extensions
     let l:extensions = ['.d.ts', '.js', '.jsx', '.ts', '.tsx']
     for l:ext in l:extensions
         if filereadable(a:path . l:ext)
-            return a:path . l:ext
+            call add(l:results, a:path . l:ext)
         endif
     endfor
-
-    let l:index_path = a:path . '/index'
-    if isdirectory(a:path)
-        for l:ext in l:extensions
-            if filereadable(a:path . '/index' . l:ext)
-                return a:path . '/index' . l:ext
-            endif
-        endfor
-        return a:path . '/'
+    if !empty(l:results)
+        return l:results
     endif
 
-    return ''
+    " Section 3: Check for any 'index' files in a directory
+    if isdirectory(a:path)
+        let l:files = split(glob(a:path . '/index*'), "\n")
+
+        for l:file in l:files
+            if filereadable(l:file)
+                call add(l:results, l:file)
+            endif
+        endfor
+
+        if !empty(l:results)
+            return l:results
+        endif
+
+        return [a:path . '/']
+    endif
+
+    " Return an empty list if no matches are found in any section
+    return []
 endfunction
 
 function! s:ResolvePath(module)
@@ -100,7 +115,7 @@ function! s:ResolvePath(module)
         let l:current_dir = l:parent_dir
     endwhile
 
-    return ''
+    return []
 endfunction
 
 function! GotoModuleTs()
@@ -128,13 +143,19 @@ function! GotoModuleTs()
     endif
 
     if !empty(l:found_module)
-        let l:resolved_path = s:ResolvePath(l:found_module)
+        let l:resolved_paths = s:ResolveFile(l:found_module)
 
-        echom 'resolved_path: ' . resolved_path
+        echom 'resolved_paths: ' . string(l:resolved_paths)
 
-        if !empty(l:resolved_path)
-            " todo, should also search and goto the module name?
-            execute 'silent vertical split ' . l:resolved_path
+        if !empty(l:resolved_paths)
+            if len(l:resolved_paths) == 1
+                execute 'silent vertical split ' . l:resolved_paths[0]
+            else
+                let l:choice = inputlist('Choose a file to open:', l:resolved_paths)
+                if l:choice > 0
+                    execute 'silent vertical split ' . l:resolved_paths[l:choice - 1]
+                endif
+            endif
         else
             echom "Error: Could not resolve path for module: " . l:found_module
         endif
