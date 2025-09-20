@@ -151,10 +151,19 @@ function! GotoModuleTs()
             if len(l:resolved_paths) == 1
                 execute 'silent vertical split ' . l:resolved_paths[0]
             else
+                let l:max_path_len = 0
+                for l:path in l:resolved_paths
+                    if len(l:path) > l:max_path_len
+                        let l:max_path_len = len(l:path)
+                    endif
+                endfor
+
                 let l:numbered_paths = []
                 for l:idx in range(len(l:resolved_paths))
-                    let l:numbered_paths += [printf('%d. %s', l:idx + 1, l:resolved_paths[l:idx])]
+                    let l:format_string = '%-' . l:max_path_len . 's %d'
+                    let l:numbered_paths += [printf(l:format_string, l:resolved_paths[l:idx], l:idx + 1)]
                 endfor
+
                 let l:options = ['Choose a file to open:'] + l:numbered_paths
                 let l:choice = inputlist(l:options)
                 if l:choice > 0
