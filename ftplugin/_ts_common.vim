@@ -22,7 +22,7 @@ function! s:ResolveFile(path)
 
     " Section 3: Check for any 'index' files in a directory
     if isdirectory(a:path)
-        let l:files = split(glob(a:path . '/index*'), "\n")
+        let l:files = split(glob(resolve(a:path . '/index*')), "\n")
 
         for l:file in l:files
             if filereadable(l:file)
@@ -143,7 +143,7 @@ function! GotoModuleTs()
     endif
 
     if !empty(l:found_module)
-        let l:resolved_paths = s:ResolveFile(l:found_module)
+        let l:resolved_paths = s:ResolvePath(l:found_module)
 
         echom 'resolved_paths: ' . string(l:resolved_paths)
 
@@ -151,7 +151,12 @@ function! GotoModuleTs()
             if len(l:resolved_paths) == 1
                 execute 'silent vertical split ' . l:resolved_paths[0]
             else
-                let l:choice = inputlist('Choose a file to open:', l:resolved_paths)
+                let l:numbered_paths = []
+                for l:idx in range(len(l:resolved_paths))
+                    let l:numbered_paths += [printf('%d. %s', l:idx + 1, l:resolved_paths[l:idx])]
+                endfor
+                let l:options = ['Choose a file to open:'] + l:numbered_paths
+                let l:choice = inputlist(l:options)
                 if l:choice > 0
                     execute 'silent vertical split ' . l:resolved_paths[l:choice - 1]
                 endif
