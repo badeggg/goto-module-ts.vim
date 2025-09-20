@@ -34,7 +34,7 @@ function! s:ResolveFile(path)
             return l:results
         endif
 
-        return [a:path . '/']
+        return [resolve(a:path . '/')]
     endif
 
     " Return an empty list if no matches are found in any section
