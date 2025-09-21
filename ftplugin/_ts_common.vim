@@ -80,17 +80,19 @@ function! s:ResolvePath(module, ...)
         for [l:alias, l:alias_path] in items(l:paths_map)
             if a:module =~ '^' . l:alias
 
-                " todo, only checking the first item
-                let l:resolved_alias = substitute(l:alias_path[0], '\*$', '', '')
-                let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
-                let l:resolved_path = fnamemodify(l:resolved_path, ':p')
-                if !empty(l:resolved_path)
-                    if l:resolved_path =~ '^' . getcwd()
-                        return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
-                    else
-                        return s:ResolveFile(l:resolved_path)
+                for l:path_item in l:alias_path
+                    let l:resolved_alias = substitute(l:path_item, '\*$', '', '')
+                    let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
+                    let l:resolved_path = fnamemodify(l:resolved_path, ':p')
+                    
+                    if !empty(l:resolved_path)
+                        if l:resolved_path =~ '^' . getcwd()
+                            return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
+                        else
+                            return s:ResolveFile(l:resolved_path)
+                        endif
                     endif
-                endif
+                endfor
             endif
         endfor
     endif
