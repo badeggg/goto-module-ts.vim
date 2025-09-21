@@ -41,8 +41,9 @@ function! s:ResolveFile(path)
     return []
 endfunction
 
-function! s:ResolvePath(module)
+function! s:ResolvePath(module, ...)
     let l:current_file_dir = fnamemodify(expand('%:p'), ':h')
+    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
 
     " Relative module
     if a:module =~ '^\.'
@@ -58,7 +59,7 @@ function! s:ResolvePath(module)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . '/tsconfig.json'
+        let l:candidate = l:current_dir . l:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json'
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
@@ -118,7 +119,9 @@ function! s:ResolvePath(module)
     return []
 endfunction
 
-function! GotoModuleTs()
+function! GotoModuleTs(...)
+    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
+
     let l:found_module = ''
 
     " todo, not respecting import and 'xxx' are separated in two lines
@@ -143,7 +146,7 @@ function! GotoModuleTs()
     endif
 
     if !empty(l:found_module)
-        let l:resolved_paths = s:ResolvePath(l:found_module)
+        let l:resolved_paths = s:ResolvePath(l:found_module, l:custom_tsconfig)
 
         echom 'resolved_paths: ' . string(l:resolved_paths)
 
