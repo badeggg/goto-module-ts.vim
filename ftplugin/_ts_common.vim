@@ -48,11 +48,7 @@ function! s:ResolvePath(module, ...)
     " Relative module
     if a:module =~ '^\.'
         let l:path = fnamemodify(resolve(l:current_file_dir . '/' . a:module), ':p')
-        if l:path =~ '^' . getcwd()
-            return s:ResolveFile(fnamemodify(l:path, ':.'))
-        else
-            return s:ResolveFile(l:path)
-        endif
+        return s:ResolveFile(fnamemodify(l:path, ':.'))
     endif
 
     " Find and parse tsconfig.json for aliases
@@ -86,11 +82,7 @@ function! s:ResolvePath(module, ...)
                     let l:resolved_path = fnamemodify(l:resolved_path, ':p')
                     
                     if !empty(l:resolved_path)
-                        if l:resolved_path =~ '^' . getcwd()
-                            return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
-                        else
-                            return s:ResolveFile(l:resolved_path)
-                        endif
+                        return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
                     endif
                 endfor
             endif
