@@ -59,7 +59,7 @@ function! s:ResolvePath(module, ...)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . l:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json'
+        let l:candidate = l:current_dir . (l:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
@@ -73,30 +73,26 @@ function! s:ResolvePath(module, ...)
 
     if !empty(l:ts_config_path)
         let l:content = join(readfile(l:ts_config_path), '')
-        let l:base_url_match = matchlist(l:content, '\v"baseUrl"\s*:\s*"(.{-})"')
-        if !empty(l:base_url_match)
-            let l:base_url = resolve(fnamemodify(l:ts_config_path, ':h') . '/' . l:base_url_match[1])
-            let l:paths_match = matchlist(l:content, '\v"paths"\s*:\s*(\{.{-}\})')
-            if !empty(l:paths_match)
-                let l:paths_map = json_decode(substitute(l:paths_match[1], '\*', '', 'g'))
+        let l:json = json_decode(l:content)
+        let l:base_url = resolve(fnamemodify(l:ts_config_path, ':h') . '/' . l:json['compilerOptions']['baseUrl'])
+        let l:paths_map = l:json['compilerOptions']['paths']
 
-                for [l:alias, l:alias_path] in items(l:paths_map)
-                    if a:module =~ '^' . l:alias
+        for [l:alias, l:alias_path] in items(l:paths_map)
+            if a:module =~ '^' . l:alias
 
-                        " todo, only checking the first item
-                        let l:resolved_alias = substitute(l:alias_path[0], '\*$', '', '')
-                        let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
-                        if !empty(l:resolved_path)
-                            if l:resolved_path =~ '^' . getcwd()
-                                return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
-                            else
-                                return s:ResolveFile(l:resolved_path)
-                            endif
-                        endif
+                " todo, only checking the first item
+                let l:resolved_alias = substitute(l:alias_path[0], '\*$', '', '')
+                let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
+                let l:resolved_path = fnamemodify(l:resolved_path, ':p')
+                if !empty(l:resolved_path)
+                    if l:resolved_path =~ '^' . getcwd()
+                        return s:ResolveFile(fnamemodify(l:resolved_path, ':.'))
+                    else
+                        return s:ResolveFile(l:resolved_path)
                     endif
-                endfor
+                endif
             endif
-        endif
+        endfor
     endif
 
     " node_modules
