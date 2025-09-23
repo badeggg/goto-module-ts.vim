@@ -70,15 +70,24 @@ function! s:ResolvePath(module, ...)
     if !empty(l:ts_config_path)
         let l:content = join(readfile(l:ts_config_path), '')
         let l:json = json_decode(l:content)
-        let l:base_url = resolve(fnamemodify(l:ts_config_path, ':h') . '/' . l:json['compilerOptions']['baseUrl'])
-        let l:paths_map = l:json['compilerOptions']['paths']
+        let l:base_url = resolve(
+            \ fnamemodify(l:ts_config_path, ':h') .
+            \ '/' .
+            \ get(l:json.compilerOptions, 'baseUrl', './')
+            \)
+        let l:paths_map = l:json.compilerOptions.paths
 
-        for [l:alias, l:alias_path] in items(l:paths_map)
-            if a:module =~ '^' . l:alias
-
-                for l:path_item in l:alias_path
-                    let l:resolved_alias = substitute(l:path_item, '\*$', '', '')
-                    let l:resolved_path = resolve(l:base_url . '/' . l:resolved_alias . substitute(a:module, '^' . l:alias, '', ''))
+        for [l:alias_left, l:alias_right] in items(l:paths_map)
+            let l:alias_left = substitute(l:alias_left , '\*$', '', '')
+            if a:module =~ '^' . l:alias_left
+                for l:right_item in l:alias_right
+                    let l:right_item = substitute(l:right_item, '\*$', '', '')
+                    let l:resolved_path = resolve(
+                        \ l:base_url .
+                        \ '/' .
+                        \ l:right_item .
+                        \ substitute(a:module, '^' . l:alias_left, '', '')
+                        \)
                     let l:resolved_path = fnamemodify(l:resolved_path, ':p')
                     
                     if !empty(l:resolved_path)
