@@ -3,14 +3,14 @@ function! s:ResolveFile(path)
     let l:results = []
 
     " Section 1: Check for specific file extensions
-    if fnamemodify(a:path, ':e') =~? '^\(css\|ts\|tsx\|js\|jsx\)$'
+    if fnamemodify(a:path, ':e') =~? '^\(css\|ts\|tsx\|js\|jsx\|json\)$'
         if filereadable(a:path)
             return [a:path]
         endif
     endif
 
     " Section 2: Check for a file with a set of extensions
-    let l:extensions = ['.d.ts', '.js', '.jsx', '.ts', '.tsx']
+    let l:extensions = ['.d.ts', '.js', '.jsx', '.ts', '.tsx', '.json']
     for l:ext in l:extensions
         if filereadable(a:path . l:ext)
             call add(l:results, a:path . l:ext)
