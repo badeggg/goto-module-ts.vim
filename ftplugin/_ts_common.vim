@@ -149,8 +149,7 @@ function! s:FindModule()
         return {"module": '', "search": ''}
     endif
 
-    " not working as expected
-    let l:cur_pos = getcurpos()
+    let l:view = winsaveview()
     let l:module = ''
     normal! gg
     let @/= '\<' . l:current_word . '\>'
@@ -165,7 +164,7 @@ function! s:FindModule()
             break
         endif
     endfor
-    call setpos('.', l:cur_pos)
+    call winrestview(l:view)
     return {"module": l:module, "search": l:current_word}
 endfunction
 
