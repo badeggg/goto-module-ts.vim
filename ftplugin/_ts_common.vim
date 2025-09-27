@@ -1,3 +1,9 @@
+" We solve 99% of the problem blazing fast, the 1% rare cases will introduce
+" significant logic complexity if we solve them too, they deserve an inconvenience
+" when encounter.
+
+
+
 " Helper function to resolve files
 function! s:ResolveFile(path)
     let l:results = []
@@ -41,9 +47,8 @@ function! s:ResolveFile(path)
     return []
 endfunction
 
-function! s:ResolvePath(module, ...)
+function! s:ResolvePath(module, custom_tsconfig)
     let l:current_file_dir = fnamemodify(expand('%:p'), ':h')
-    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
 
     " Relative module
     if a:module =~ '^\.'
@@ -55,7 +60,7 @@ function! s:ResolvePath(module, ...)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . (l:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
+        let l:candidate = l:current_dir . (a:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
@@ -123,15 +128,15 @@ function! GotoModuleTs(...)
 
     let l:found_module = ''
 
-    " todo, not respecting import and 'xxx' are separated in two lines
     " check: import 'xxx'
+    " not respecting import and 'xxx' are separated in two lines
     let l:match_import = matchlist(getline('.'), '\vimport\s+[''"](.{-})[''"]')
     if !empty(l:match_import)
         let l:found_module = l:match_import[1]
     endif
 
-    " todo, not respecting from and 'xxx' are separated in two lines
     " check: from 'xxx'
+    " not respecting from and 'xxx' are separated in two lines
     if empty(l:found_module)
         for l:i in range(line('.'), line('$'))
             let l:line_content = getline(l:i)
