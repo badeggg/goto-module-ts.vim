@@ -123,40 +123,70 @@ function! s:ResolvePath(module, custom_tsconfig)
     return []
 endfunction
 
-function! GotoModuleTs(...)
-    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
-
-    let l:found_module = ''
-
+function! s:FindModule()
     " check: import 'xxx'
     " not respecting import and 'xxx' are separated in two lines
     let l:match_import = matchlist(getline('.'), '\vimport\s+[''"](.{-})[''"]')
     if !empty(l:match_import)
-        let l:found_module = l:match_import[1]
+        return {"module": l:match_import[1], "search": ''}
     endif
 
     " check: from 'xxx'
     " not respecting from and 'xxx' are separated in two lines
-    if empty(l:found_module)
-        for l:i in range(line('.'), line('$'))
-            let l:line_content = getline(l:i)
-            let l:match_from = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
+    let l:max_test_lines = 50
+    for l:i in range(line('.'), line('.') + l:max_test_lines)
+        let l:line_content = getline(l:i)
+        let l:match_from = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
 
-            if !empty(l:match_from)
-                let l:found_module = l:match_from[1]
-                break
-            endif
-        endfor
+        if !empty(l:match_from)
+            return {"module": l:match_from[1], "search": ''}
+        endif
+    endfor
+
+    " check: current word is a imported value from some module
+    let l:current_word = expand('<cword>')
+    if empty(l:current_word)
+        return {"module": '', "search": ''}
     endif
 
-    if !empty(l:found_module)
-        let l:resolved_paths = s:ResolvePath(l:found_module, l:custom_tsconfig)
+    let l:cur_pos = getcurpos()
+    let l:module = ''
+    normal! gg
+    let @/= '\<' . l:current_word . '\>'
+    normal! n
+    call histadd('search', @/)
+    for l:i in range(line('.'), line('.') + l:max_test_lines)
+        let l:line_content = getline(l:i)
+        let l:match_from = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
+
+        if !empty(l:match_from)
+            let l:module = l:match_from[1]
+            break
+        endif
+    endfor
+    call setpos('.', l:cur_pos)
+    return {"module": l:module, "search": l:current_word}
+endfunction
+
+
+function! GotoModuleTs(...)
+    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
+
+    let l:found = s:FindModule()
+
+    if !empty(l:found.module)
+        let l:resolved_paths = s:ResolvePath(l:found.module, l:custom_tsconfig)
 
         echom 'resolved_paths: ' . string(l:resolved_paths)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
                 execute 'silent vertical split ' . l:resolved_paths[0]
+                if !empty(l:found.search)
+                    let @/= '\<' . l:found.search . '\>'
+                    normal! n
+                    call histadd('search', @/)
+                endif
             else
                 let l:max_path_len = 0
                 for l:path in l:resolved_paths
@@ -175,10 +205,15 @@ function! GotoModuleTs(...)
                 let l:choice = inputlist(l:options)
                 if l:choice > 0
                     execute 'silent vertical split ' . l:resolved_paths[l:choice - 1]
+                    if !empty(l:found.search)
+                        let @/= '\<' . l:found.search . '\>'
+                        normal! n
+                        call histadd('search', @/)
+                    endif
                 endif
             endif
         else
-            echom "Error: Could not resolve path for module: " . l:found_module
+            echom "Error: Could not resolve path for module: " . l:found.module
         endif
     else
         echom "No import or from statement found from the current line onwards."
