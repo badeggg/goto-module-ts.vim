@@ -149,6 +149,7 @@ function! s:FindModule()
         return {"module": '', "search": ''}
     endif
 
+    " not working as expected
     let l:cur_pos = getcurpos()
     let l:module = ''
     normal! gg
