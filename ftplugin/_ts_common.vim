@@ -184,7 +184,7 @@ function! GotoModuleTs(...)
                 execute 'silent vertical split ' . l:resolved_paths[0]
                 if !empty(l:found.search)
                     let @/= '\<' . l:found.search . '\>'
-                    normal! n
+                    silent! normal! n
                     call histadd('search', @/)
                 endif
             else
@@ -207,7 +207,7 @@ function! GotoModuleTs(...)
                     execute 'silent vertical split ' . l:resolved_paths[l:choice - 1]
                     if !empty(l:found.search)
                         let @/= '\<' . l:found.search . '\>'
-                        normal! n
+                        silent! normal! n
                         call histadd('search', @/)
                     endif
                 endif
