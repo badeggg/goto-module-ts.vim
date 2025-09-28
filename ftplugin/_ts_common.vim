@@ -213,9 +213,13 @@ function! GotoModuleTs(...)
                 endif
             endif
         else
+            echohl ErrorMsg
             echom "Error: Could not resolve path for module: " . l:found.module
+            echohl None
         endif
     else
-        echom "No import or from statement found from the current line onwards."
+        echohl ErrorMsg
+        echom "Error: No import module statement found"
+        echohl None
     endif
 endfunction
