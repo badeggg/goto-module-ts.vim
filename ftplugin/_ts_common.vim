@@ -8,8 +8,8 @@
 function! s:ResolveFile(path)
     let l:results = []
 
-    " Section 1: Check for specific file extensions
-    if fnamemodify(a:path, ':e') =~? '^\(css\|ts\|tsx\|js\|jsx\|json\)$'
+    " Section 1: Respect specified extension
+    if !empty(fnamemodify(a:path, ':e'))
         if filereadable(a:path)
             return [a:path]
         endif
@@ -124,22 +124,36 @@ function! s:ResolvePath(module, custom_tsconfig)
 endfunction
 
 function! s:FindModule()
-    " check: import 'xxx'
-    " not respecting import and 'xxx' are separated in two lines
-    let l:match_import = matchlist(getline('.'), '\vimport\s+[''"](.{-})[''"]')
-    if !empty(l:match_import)
-        return {"module": l:match_import[1], "search": ''}
+    " check: import('xxx')
+    " not respecting separated in two lines
+    let l:match = matchlist(getline('.'), '\vimport\(\s{-}[''"](.{-})[''"]\)')
+    if !empty(l:match)
+        return {"module": l:match[1], "search": ''}
     endif
 
-    " check: from 'xxx'
-    " not respecting from and 'xxx' are separated in two lines
+    " check: require('xxx')
+    " not respecting separated in two lines
+    let l:match = matchlist(getline('.'), '\vrequire\(\s{-}[''"](.{-})[''"]\)')
+    if !empty(l:match)
+        return {"module": l:match[1], "search": ''}
+    endif
+
+    " check: import 'xxx'
+    " not respecting separated in two lines
+    let l:match = matchlist(getline('.'), '\vimport\s+[''"](.{-})[''"]')
+    if !empty(l:match)
+        return {"module": l:match[1], "search": ''}
+    endif
+
+    " check: ... from 'xxx'
+    " not respecting separated in two lines
     let l:max_test_lines = 50
     for l:i in range(line('.'), line('.') + l:max_test_lines)
         let l:line_content = getline(l:i)
-        let l:match_from = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
+        let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
 
-        if !empty(l:match_from)
-            return {"module": l:match_from[1], "search": ''}
+        if !empty(l:match)
+            return {"module": l:match[1], "search": ''}
         endif
     endfor
 
@@ -157,10 +171,10 @@ function! s:FindModule()
     call histadd('search', @/)
     for l:i in range(line('.'), line('.') + l:max_test_lines)
         let l:line_content = getline(l:i)
-        let l:match_from = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
+        let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
 
-        if !empty(l:match_from)
-            let l:module = l:match_from[1]
+        if !empty(l:match)
+            let l:module = l:match[1]
             break
         endif
     endfor
