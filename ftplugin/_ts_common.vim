@@ -123,19 +123,37 @@ function! s:ResolvePath(module, custom_tsconfig)
     return []
 endfunction
 
-function! s:FindModule()
+function! s:FindModule(selecting_module)
+    " regard selection as a module string, this is a backup solution
+    if a:selecting_module
+        let l:old_x_reg = getreg('x')
+        silent execute 'normal! gv"xy'
+        let l:selected_text = getreg('x')
+        call setreg('x', l:old_x_reg)
+        let l:cleaned = substitute(l:selected_text, '[''"(){};,\[\]\n]', '', 'g')
+        if !empty(l:cleaned)
+            return {"module": l:cleaned, "search": ''}
+        endif
+    endif
+
     " check: import('xxx')
     " not respecting separated in two lines
-    let l:match = matchlist(getline('.'), '\vimport\(\s{-}[''"](.{-})[''"]\)')
+    let l:match = matchlist(getline('.')[col('.') - 1 : ], '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    if empty(l:match)
+        let l:match = matchlist(getline('.'), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    endif
     if !empty(l:match)
         return {"module": l:match[1], "search": ''}
     endif
 
-    " check: require('xxx')
+    " check: require('xxx') or require<Type>('xxx')
     " not respecting separated in two lines
-    let l:match = matchlist(getline('.'), '\vrequire\(\s{-}[''"](.{-})[''"]\)')
+    let l:match = matchlist(getline('.')[col('.') - 1 : ], '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    if empty(l:match)
+        let l:match = matchlist(getline('.'), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    endif
     if !empty(l:match)
-        return {"module": l:match[1], "search": ''}
+        return {"module": l:match[2], "search": ''}
     endif
 
     " check: import 'xxx'
@@ -179,19 +197,20 @@ function! s:FindModule()
         endif
     endfor
     call winrestview(l:view)
-    return {"module": l:module, "search": l:current_word}
+    if !empty(l:match)
+        return {"module": l:module, "search": l:current_word}
+    endif
 endfunction
 
 
 function! GotoModuleTs(...)
     let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
+    let l:selecting_module = a:0 >= 2 ? a:2 : 0
 
-    let l:found = s:FindModule()
+    let l:found = s:FindModule(l:selecting_module)
 
     if !empty(l:found.module)
         let l:resolved_paths = s:ResolvePath(l:found.module, l:custom_tsconfig)
-
-        echom 'resolved_paths: ' . string(l:resolved_paths)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
