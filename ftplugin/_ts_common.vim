@@ -47,7 +47,7 @@ function! s:ResolveFile(path)
     return []
 endfunction
 
-function! s:ResolvePath(module, custom_tsconfig)
+function! s:ResolvePath(module, use_custom_tsconfig)
     let l:current_file_dir = fnamemodify(expand('%:p'), ':h')
 
     " Relative module
@@ -60,7 +60,7 @@ function! s:ResolvePath(module, custom_tsconfig)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . (a:custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
+        let l:candidate = l:current_dir . (a:use_custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
@@ -123,9 +123,9 @@ function! s:ResolvePath(module, custom_tsconfig)
     return []
 endfunction
 
-function! s:FindModule(selecting_module)
+function! s:FindModule(selecting_module_str)
     " regard selection as a module string, this is a backup solution
-    if a:selecting_module
+    if a:selecting_module_str
         let l:old_x_reg = getreg('x')
         silent execute 'normal! gv"xy'
         let l:selected_text = getreg('x')
@@ -203,18 +203,18 @@ function! s:FindModule(selecting_module)
 endfunction
 
 
-function! GotoModuleTs(...)
-    let l:custom_tsconfig = a:0 >= 1 ? a:1 : 0
-    let l:selecting_module = a:0 >= 2 ? a:2 : 0
+function! GotoModuleTs(args)
+    let l:use_custom_tsconfig = get(a:args, 'use_custom_tsconfig', 0)
+    let l:selecting_module_str = get(a:args, 'selecting_module_str', 0)
 
-    let l:found = s:FindModule(l:selecting_module)
+    let l:found = s:FindModule(l:selecting_module_str)
 
     if !empty(l:found.module)
-        let l:resolved_paths = s:ResolvePath(l:found.module, l:custom_tsconfig)
+        let l:resolved_paths = s:ResolvePath(l:found.module, l:use_custom_tsconfig)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
-                execute 'silent vertical split ' . l:resolved_paths[0]
+                execute 'edit' l:resolved_paths[0]
                 if !empty(l:found.search)
                     let @/= '\<' . l:found.search . '\>'
                     silent! normal! n
@@ -237,7 +237,7 @@ function! GotoModuleTs(...)
                 let l:options = ['Choose a file to open:'] + l:numbered_paths
                 let l:choice = inputlist(l:options)
                 if l:choice > 0
-                    execute 'silent vertical split ' . l:resolved_paths[l:choice - 1]
+                    execute 'edit' l:resolved_paths[l:choice - 1]
                     if !empty(l:found.search)
                         let @/= '\<' . l:found.search . '\>'
                         silent! normal! n
