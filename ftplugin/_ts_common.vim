@@ -51,9 +51,10 @@ function! s:ResolvePath(module, use_custom_tsconfig)
     let l:current_file_dir = fnamemodify(expand('%:p'), ':h')
 
     " Relative module
-    if a:module =~ '^\.'
-        let l:path = fnamemodify(resolve(l:current_file_dir . '/' . a:module), ':p')
-        return s:ResolveFile(fnamemodify(l:path, ':.'))
+    let l:path = fnamemodify(resolve(l:current_file_dir . '/' . a:module), ':p')
+    let l:resolved = s:ResolveFile(fnamemodify(l:path, ':.'))
+    if !empty(l:resolved)
+        return l:resolved
     endif
 
     " Find and parse tsconfig.json for aliases
