@@ -166,7 +166,7 @@ function! s:FindModule(selecting_module_str)
 
     " check: ... from 'xxx'
     " not respecting separated in two lines
-    let l:max_test_lines = 50
+    let l:max_test_lines = 5000
     for l:i in range(line('.'), line('.') + l:max_test_lines)
         let l:line_content = getline(l:i)
         let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
