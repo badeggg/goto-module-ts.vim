@@ -218,7 +218,7 @@ function! GotoModuleTs(args)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
-                if a:open_in_new_window
+                if l:open_in_new_window
                     execute 'vs' l:resolved_paths[0]
                 else
                     execute 'edit' l:resolved_paths[0]
