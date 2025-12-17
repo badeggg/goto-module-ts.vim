@@ -4,6 +4,8 @@
 
 
 
+let s:CUSTOM_TSCONFIG_FILE_NAME = "custom_tsconfig.json"
+
 " Helper function to resolve files
 function! s:ResolveFile(path)
     let l:results = []
@@ -61,7 +63,7 @@ function! s:ResolvePath(module, use_custom_tsconfig)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . (a:use_custom_tsconfig ? '/custom_tsconfig.json' : '/tsconfig.json')
+        let l:candidate = l:current_dir . (a:use_custom_tsconfig ? '/' . s:CUSTOM_TSCONFIG_FILE_NAME : '/tsconfig.json')
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
