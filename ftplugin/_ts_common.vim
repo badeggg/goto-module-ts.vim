@@ -205,8 +205,9 @@ endfunction
 
 
 function! GotoModuleTs(args)
-    let l:use_custom_tsconfig = get(a:args, 'use_custom_tsconfig', 0)
+    let l:use_custom_tsconfig = get(a:args, 'use_custom_tsconfig', 1)
     let l:selecting_module_str = get(a:args, 'selecting_module_str', 0)
+    let l:open_in_new_window = get(a:args, 'open_in_new_window', 0)
 
     let l:found = s:FindModule(l:selecting_module_str)
 
@@ -215,7 +216,11 @@ function! GotoModuleTs(args)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
-                execute 'edit' l:resolved_paths[0]
+                if a:open_in_new_window
+                    execute 'vs' l:resolved_paths[0]
+                else
+                    execute 'edit' l:resolved_paths[0]
+                endif
                 if !empty(l:found.search)
                     let @/= '\<' . l:found.search . '\>'
                     silent! normal! n
@@ -238,7 +243,11 @@ function! GotoModuleTs(args)
                 let l:options = ['Choose a file to open:'] + l:numbered_paths
                 let l:choice = inputlist(l:options)
                 if l:choice > 0
-                    execute 'edit' l:resolved_paths[l:choice - 1]
+                    if a:open_in_new_window
+                        execute 'vs' l:resolved_paths[l:choice - 1]
+                    else
+                        execute 'edit' l:resolved_paths[l:choice - 1]
+                    endif
                     if !empty(l:found.search)
                         let @/= '\<' . l:found.search . '\>'
                         silent! normal! n
