@@ -245,7 +245,7 @@ function! GotoModuleTs(args)
                 let l:options = ['Choose a file to open:'] + l:numbered_paths
                 let l:choice = inputlist(l:options)
                 if l:choice > 0
-                    if a:open_in_new_window
+                    if l:open_in_new_window
                         execute 'vs' l:resolved_paths[l:choice - 1]
                     else
                         execute 'edit' l:resolved_paths[l:choice - 1]
