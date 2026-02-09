@@ -205,7 +205,7 @@ function! s:FindModule(selecting_module_str)
     let @/= '\<' . l:current_word . '\>'
     normal! n
     call histadd('search', @/)
-    let l:max_file_lines = 500
+    let l:max_file_lines = 5000
     for l:i in range(line('.'), line('.') + l:max_file_lines)
         let is_importing = s:LineIsImporting(l:i)
         if strlen(is_importing)
