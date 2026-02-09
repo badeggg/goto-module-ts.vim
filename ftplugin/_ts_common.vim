@@ -167,6 +167,11 @@ function! s:LineIsImporting(line_num)
         if !empty(l:match)
             return l:match[1]
         endif
+
+        if stridx(l:line_content, ';') != -1
+            " end of line statement and not matching
+            break
+        endif
     endfor
 
     return ''
@@ -199,14 +204,14 @@ function! s:FindModule(selecting_module_str)
         return {"module": '', "search": ''}
     endif
 
+    let l:current_line = line('.')
     let l:view = winsaveview()
     let l:module = ''
     normal! gg
     let @/= '\<' . l:current_word . '\>'
     normal! n
     call histadd('search', @/)
-    let l:max_file_lines = 5000
-    for l:i in range(line('.'), line('.') + l:max_file_lines)
+    for l:i in range(line('.'), l:current_line - 1)
         let is_importing = s:LineIsImporting(l:i)
         if strlen(is_importing)
             let l:module = is_importing
