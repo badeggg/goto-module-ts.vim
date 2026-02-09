@@ -126,6 +126,54 @@ function! s:ResolvePath(module, use_custom_tsconfig)
     return []
 endfunction
 
+" Returns the importing module string, empty string will be returned if not
+" importing
+function! s:LineIsImporting(line_num)
+    " check: import('xxx')
+    " not respecting separated in two lines
+    let l:match = matchlist(getline(a:line_num), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    if empty(l:match)
+        let l:match = matchlist(getline(a:line_num), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    endif
+    if !empty(l:match)
+        return l:match[1]
+    endif
+
+    " check: require('xxx') or require<Type>('xxx')
+    " not respecting separated in two lines
+    let l:match = matchlist(getline(a:line_num), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    if empty(l:match)
+        let l:match = matchlist(getline(a:line_num), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    endif
+    if !empty(l:match)
+        return l:match[2]
+    endif
+
+    " check: import 'xxx'
+    " not respecting separated in two lines
+    let l:match = matchlist(getline(a:line_num), '\vimport\s+[''"](.{-})[''"]')
+    if !empty(l:match)
+        return l:match[1]
+    endif
+
+    " check: import { ... } from 'xxx'
+    " not respecting case that `from 'xxx'` is separated in two lines
+    " respecting case that `from 'xxx'` is below the checking line
+    let l:max_span_lines = 100
+    for l:i in range(a:line_num, a:line_num + l:max_span_lines)
+        let l:line_content = getline(l:i)
+        let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
+
+        if !empty(l:match)
+            return l:match[1]
+        endif
+    endfor
+
+    return ''
+
+endfunction
+
+" Returns a dictionary like {"module": './src/functions', "search": 'functionName'}
 function! s:FindModule(selecting_module_str)
     " regard selection as a module string, this is a backup solution
     if a:selecting_module_str
@@ -139,44 +187,11 @@ function! s:FindModule(selecting_module_str)
         endif
     endif
 
-    " check: import('xxx')
-    " not respecting separated in two lines
-    let l:match = matchlist(getline('.')[col('.') - 1 : ], '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    if empty(l:match)
-        let l:match = matchlist(getline('.'), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
+    " check if we are sitting in a module import/require statement
+    let is_importing = s:LineIsImporting(line('.'))
+    if strlen(is_importing)
+        return {"module": is_importing, "search": ''}
     endif
-    if !empty(l:match)
-        return {"module": l:match[1], "search": ''}
-    endif
-
-    " check: require('xxx') or require<Type>('xxx')
-    " not respecting separated in two lines
-    let l:match = matchlist(getline('.')[col('.') - 1 : ], '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    if empty(l:match)
-        let l:match = matchlist(getline('.'), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    endif
-    if !empty(l:match)
-        return {"module": l:match[2], "search": ''}
-    endif
-
-    " check: import 'xxx'
-    " not respecting separated in two lines
-    let l:match = matchlist(getline('.'), '\vimport\s+[''"](.{-})[''"]')
-    if !empty(l:match)
-        return {"module": l:match[1], "search": ''}
-    endif
-
-    " check: ... from 'xxx'
-    " not respecting separated in two lines
-    let l:max_test_lines = 5000
-    for l:i in range(line('.'), line('.') + l:max_test_lines)
-        let l:line_content = getline(l:i)
-        let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
-
-        if !empty(l:match)
-            return {"module": l:match[1], "search": ''}
-        endif
-    endfor
 
     " check: current word is a imported value from some module
     let l:current_word = expand('<cword>')
@@ -190,19 +205,21 @@ function! s:FindModule(selecting_module_str)
     let @/= '\<' . l:current_word . '\>'
     normal! n
     call histadd('search', @/)
-    for l:i in range(line('.'), line('.') + l:max_test_lines)
-        let l:line_content = getline(l:i)
-        let l:match = matchlist(l:line_content, '\vfrom\s+[''"](.{-})[''"]')
-
-        if !empty(l:match)
-            let l:module = l:match[1]
+    let l:max_file_lines = 500
+    for l:i in range(line('.'), line('.') + l:max_file_lines)
+        let is_importing = s:LineIsImporting(l:i)
+        if strlen(is_importing)
+            let l:module = is_importing
             break
         endif
     endfor
     call winrestview(l:view)
-    if !empty(l:match)
+    if strlen(l:module)
         return {"module": l:module, "search": l:current_word}
     endif
+
+    return {"module": '', "search": ''}
+
 endfunction
 
 
@@ -213,7 +230,7 @@ function! GotoModuleTs(args)
 
     let l:found = s:FindModule(l:selecting_module_str)
 
-    if !empty(l:found.module)
+    if strlen(l:found.module)
         let l:resolved_paths = s:ResolvePath(l:found.module, l:use_custom_tsconfig)
 
         if !empty(l:resolved_paths)
