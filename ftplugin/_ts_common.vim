@@ -49,7 +49,7 @@ function! s:ResolveFile(path)
     return []
 endfunction
 
-function! s:ResolvePath(module, use_custom_tsconfig)
+function! s:ResolvePath(module, try_custom_tsconfig)
     let l:current_file_dir = fnamemodify(expand('%:p'), ':h')
 
     " Relative module
@@ -63,11 +63,20 @@ function! s:ResolvePath(module, use_custom_tsconfig)
     let l:current_dir = l:current_file_dir
     let l:ts_config_path = ''
     while !empty(l:current_dir)
-        let l:candidate = l:current_dir . (a:use_custom_tsconfig ? '/' . s:CUSTOM_TSCONFIG_FILE_NAME : '/tsconfig.json')
+        if a:try_custom_tsconfig
+            let l:candidate = l:current_dir . '/' . s:CUSTOM_TSCONFIG_FILE_NAME
+            if filereadable(l:candidate)
+                let l:ts_config_path = l:candidate
+                break
+            endif
+        endif
+
+        let l:candidate = l:current_dir . '/tsconfig.json'
         if filereadable(l:candidate)
             let l:ts_config_path = l:candidate
             break
         endif
+
         let l:parent_dir = fnamemodify(l:current_dir, ':h')
         if l:parent_dir ==# l:current_dir
             break
@@ -229,14 +238,14 @@ endfunction
 
 
 function! GotoModuleTs(args)
-    let l:use_custom_tsconfig = get(a:args, 'use_custom_tsconfig', 1)
+    let l:try_custom_tsconfig = get(a:args, 'try_custom_tsconfig', 1)
     let l:selecting_module_str = get(a:args, 'selecting_module_str', 0)
     let l:open_in_new_window = get(a:args, 'open_in_new_window', 0)
 
     let l:found = s:FindModule(l:selecting_module_str)
 
     if strlen(l:found.module)
-        let l:resolved_paths = s:ResolvePath(l:found.module, l:use_custom_tsconfig)
+        let l:resolved_paths = s:ResolvePath(l:found.module, l:try_custom_tsconfig)
 
         if !empty(l:resolved_paths)
             if len(l:resolved_paths) == 1
