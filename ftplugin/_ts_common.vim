@@ -138,29 +138,26 @@ endfunction
 " Returns the importing module string, empty string will be returned if not
 " importing
 function! s:LineIsImporting(line_num)
+    let l:line_content = getline(a:line_num)
+    let l:line_content = substitute(l:line_content, '/\*.\{-}\*/', '', 'g')
+
     " check: import('xxx')
     " not respecting separated in two lines
-    let l:match = matchlist(getline(a:line_num), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    if empty(l:match)
-        let l:match = matchlist(getline(a:line_num), '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    endif
+    let l:match = matchlist(l:line_content, '\vimport\(\s{-}[''"](.{-})[''"]\s{-}\)')
     if !empty(l:match)
         return l:match[1]
     endif
 
     " check: require('xxx') or require<Type>('xxx')
     " not respecting separated in two lines
-    let l:match = matchlist(getline(a:line_num), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    if empty(l:match)
-        let l:match = matchlist(getline(a:line_num), '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
-    endif
+    let l:match = matchlist(l:line_content, '\vrequire(\<.{-}\>)?\(\s{-}[''"](.{-})[''"]\s{-}\)')
     if !empty(l:match)
         return l:match[2]
     endif
 
     " check: import 'xxx'
     " not respecting separated in two lines
-    let l:match = matchlist(getline(a:line_num), '\vimport\s+[''"](.{-})[''"]')
+    let l:match = matchlist(l:line_content, '\vimport\s+[''"](.{-})[''"]')
     if !empty(l:match)
         return l:match[1]
     endif
