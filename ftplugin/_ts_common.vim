@@ -213,17 +213,25 @@ function! s:FindModule(selecting_module_str)
     let l:current_line = line('.')
     let l:view = winsaveview()
     let l:module = ''
+
     normal! gg
     let @/= '\<' . l:current_word . '\>'
-    normal! n
     call histadd('search', @/)
-    for l:i in range(line('.'), l:current_line - 1)
-        let is_importing = s:LineIsImporting(l:i)
-        if strlen(is_importing)
-            let l:module = is_importing
+
+    "" Keep track of the last line looked at to prevent infinite loops (wrap-around)
+    let l:last_line = 0
+    silent! normal! n
+    while line('.') < l:current_line && line('.') != l:last_line
+        let l:last_line = line('.')
+        let l:is_importing = s:LineIsImporting(line('.'))
+        if strlen(l:is_importing)
+            let l:module = l:is_importing
             break
         endif
-    endfor
+
+        silent! normal! n
+    endwhile
+
     call winrestview(l:view)
     if strlen(l:module)
         return {"module": l:module, "search": l:current_word}
